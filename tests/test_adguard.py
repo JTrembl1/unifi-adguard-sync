@@ -70,3 +70,27 @@ def test_list_clients_raises_on_401():
     )
     with pytest.raises(AdGuardError, match="401"):
         _client().list_clients()
+
+
+@responses.activate
+def test_list_clients_handles_null_clients_field():
+    """AdGuard returns {"clients": null} on a fresh install — must not crash."""
+    responses.get(
+        "http://10.0.0.2:3000/control/clients",
+        json={"clients": None, "auto_clients": [], "supported_tags": []},
+        status=200,
+    )
+    clients = _client().list_clients()
+    assert clients == []
+
+
+@responses.activate
+def test_list_clients_handles_missing_clients_field():
+    """Defensive: missing clients key returns empty list, not None."""
+    responses.get(
+        "http://10.0.0.2:3000/control/clients",
+        json={"auto_clients": []},
+        status=200,
+    )
+    clients = _client().list_clients()
+    assert clients == []

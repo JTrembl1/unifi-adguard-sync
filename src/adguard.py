@@ -30,7 +30,7 @@ class AdGuardClient:
     def list_clients(self) -> list[dict]:
         resp = self._request("GET", "/control/clients")
         body = resp.json()
-        return body.get("clients", [])
+        return body.get("clients") or []
 
     def add_client(self, payload: dict) -> None:
         self._request("POST", "/control/clients/add", json=payload)
