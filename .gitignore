@@ -5,11 +5,21 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
 
 # Local config & state
 .env
 data/
 *.log
+
+# Editor swap/backup files
+*.swp
+*~
 
 # IDE
 .vscode/
