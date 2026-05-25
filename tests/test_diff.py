@@ -26,22 +26,22 @@ def test_empty_both_sides_is_noop():
 
 
 def test_new_client_in_unifi_only_is_added():
-    desired = [{"name": "NAS", "ids": ["aa:01"], "tags": ["t"]}]
+    desired = [{"name": "NAS", "ids": ["aa:bb:cc:dd:ee:01"], "tags": ["t"]}]
     plan = compute_diff(desired=desired, adguard_clients=[], ownership_tag="t", deletable_macs=set())
     assert len(plan.to_add) == 1
     assert plan.to_add[0]["name"] == "NAS"
 
 
 def test_same_client_on_both_sides_is_noop():
-    desired = [{"name": "NAS", "ids": ["aa:01"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
-    current = [_adguard_client("NAS", "aa:01", tag="t")]
+    desired = [{"name": "NAS", "ids": ["aa:bb:cc:dd:ee:01"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
+    current = [_adguard_client("NAS", "aa:bb:cc:dd:ee:01", tag="t")]
     plan = compute_diff(desired=desired, adguard_clients=current, ownership_tag="t", deletable_macs=set())
     assert plan == SyncPlan(to_add=[], to_update=[], to_delete=[])
 
 
 def test_renamed_client_is_updated():
-    desired = [{"name": "NewName", "ids": ["aa:01"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
-    current = [_adguard_client("OldName", "aa:01", tag="t")]
+    desired = [{"name": "NewName", "ids": ["aa:bb:cc:dd:ee:01"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
+    current = [_adguard_client("OldName", "aa:bb:cc:dd:ee:01", tag="t")]
     plan = compute_diff(desired=desired, adguard_clients=current, ownership_tag="t", deletable_macs=set())
     assert len(plan.to_update) == 1
     assert plan.to_update[0]["old_name"] == "OldName"
@@ -50,17 +50,17 @@ def test_renamed_client_is_updated():
 
 def test_client_removed_from_unifi_is_deleted_if_past_grace():
     desired = []
-    current = [_adguard_client("NAS", "aa:01", tag="t")]
+    current = [_adguard_client("NAS", "aa:bb:cc:dd:ee:01", tag="t")]
     plan = compute_diff(
         desired=desired, adguard_clients=current, ownership_tag="t",
-        deletable_macs={"aa:01"},
+        deletable_macs={"aa:bb:cc:dd:ee:01"},
     )
     assert plan.to_delete == ["NAS"]
 
 
 def test_client_removed_from_unifi_kept_during_grace_period():
     desired = []
-    current = [_adguard_client("NAS", "aa:01", tag="t")]
+    current = [_adguard_client("NAS", "aa:bb:cc:dd:ee:01", tag="t")]
     plan = compute_diff(
         desired=desired, adguard_clients=current, ownership_tag="t",
         deletable_macs=set(),
@@ -71,17 +71,29 @@ def test_client_removed_from_unifi_kept_during_grace_period():
 def test_untagged_adguard_client_is_ignored():
     """The sacred-manual rule: clients without our tag are invisible to the diff."""
     desired = []
-    current = [_adguard_client("AdGuard Home", "aa:99", tag=None)]
+    current = [_adguard_client("AdGuard Home", "aa:bb:cc:dd:ee:99", tag=None)]
     plan = compute_diff(
         desired=desired, adguard_clients=current, ownership_tag="t",
-        deletable_macs={"aa:99"},
+        deletable_macs={"aa:bb:cc:dd:ee:99"},
     )
     assert plan.to_delete == []
     assert plan.to_add == []
 
 
 def test_ip_change_triggers_update():
-    desired = [{"name": "NAS", "ids": ["aa:01", "10.0.0.99"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
-    current = [_adguard_client("NAS", "aa:01", ip="10.0.0.5", tag="t")]
+    desired = [{"name": "NAS", "ids": ["aa:bb:cc:dd:ee:01", "10.0.0.99"], "tags": ["t"], "use_global_settings": True, "upstreams": []}]
+    current = [_adguard_client("NAS", "aa:bb:cc:dd:ee:01", ip="10.0.0.5", tag="t")]
     plan = compute_diff(desired=desired, adguard_clients=current, ownership_tag="t", deletable_macs=set())
     assert len(plan.to_update) == 1
+
+
+def test_extract_mac_rejects_too_few_octets():
+    assert extract_mac({"ids": ["aa:bb"]}) is None
+
+
+def test_extract_mac_rejects_too_many_octets():
+    assert extract_mac({"ids": ["aa:bb:cc:dd:ee:ff:gg"]}) is None
+
+
+def test_extract_mac_accepts_exactly_six_octets():
+    assert extract_mac({"ids": ["aa:bb:cc:dd:ee:ff"]}) == "aa:bb:cc:dd:ee:ff"

@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass, field
 
 
-_MAC_RE = re.compile(r"^([0-9a-f]{2}:)+[0-9a-f]{2}$", re.IGNORECASE)
+_MAC_RE = re.compile(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$", re.IGNORECASE)
 
 
 @dataclass

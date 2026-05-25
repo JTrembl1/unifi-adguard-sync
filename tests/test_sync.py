@@ -57,8 +57,8 @@ def test_dry_run_does_not_write():
 
 def test_scope_fixed_excludes_non_fixed_clients():
     unifi = _fake_unifi([
-        {"name": "NAS", "macAddress": "aa:01", "fixedIp": True},
-        {"name": "Phone", "macAddress": "aa:02", "fixedIp": False},
+        {"name": "NAS", "macAddress": "aa:bb:cc:dd:ee:01", "fixedIp": True},
+        {"name": "Phone", "macAddress": "aa:bb:cc:dd:ee:02", "fixedIp": False},
     ])
     adguard = _fake_adguard([])
     grace = _fake_grace(set())
@@ -74,8 +74,8 @@ def test_scope_fixed_excludes_non_fixed_clients():
 
 def test_failed_single_write_does_not_stop_cycle():
     unifi = _fake_unifi([
-        {"name": "A", "macAddress": "aa:01", "fixedIp": True},
-        {"name": "B", "macAddress": "aa:02", "fixedIp": True},
+        {"name": "A", "macAddress": "aa:bb:cc:dd:ee:01", "fixedIp": True},
+        {"name": "B", "macAddress": "aa:bb:cc:dd:ee:02", "fixedIp": True},
     ])
     adguard = _fake_adguard([])
     grace = _fake_grace(set())
@@ -93,7 +93,7 @@ def test_failed_single_write_does_not_stop_cycle():
 
 def test_grace_tracker_called_with_current_unifi_macs():
     unifi = _fake_unifi([
-        {"name": "A", "macAddress": "AA:01", "fixedIp": True},
+        {"name": "A", "macAddress": "AA:BB:CC:DD:EE:01", "fixedIp": True},
     ])
     adguard = _fake_adguard([])
     grace = _fake_grace(set())
@@ -104,4 +104,4 @@ def test_grace_tracker_called_with_current_unifi_macs():
     )
     grace.update_and_get_deletable.assert_called_once()
     seen_arg = grace.update_and_get_deletable.call_args[1]["currently_seen"]
-    assert "aa:01" in {m.lower() for m in seen_arg}
+    assert "aa:bb:cc:dd:ee:01" in {m.lower() for m in seen_arg}

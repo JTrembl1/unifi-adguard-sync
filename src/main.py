@@ -83,8 +83,7 @@ def _loop(cfg: Config) -> int:
                 result.added, result.updated, result.deleted,
                 result.untouched, result.failed, result.took_ms,
             )
-            if result.failed == 0:
-                _touch_health_file()
+            _touch_health_file()
         except UnifiError as e:
             logger.error("sync failed  stage=unifi_fetch error=%s", e)
         except AdGuardError as e:
