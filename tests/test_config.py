@@ -69,3 +69,29 @@ def test_invalid_mode_raises(monkeypatch):
     monkeypatch.setenv("MODE", "rocket")
     with pytest.raises(ConfigError, match="MODE"):
         Config.from_env()
+
+
+def test_invalid_int_raises(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("SYNC_INTERVAL_SECONDS", "not-a-number")
+    with pytest.raises(ConfigError, match="must be an integer"):
+        Config.from_env()
+
+
+def test_bool_parsing_all_truthy_variants(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    for truthy in ["1", "true", "TRUE", "yes", "on", "  true  "]:
+        monkeypatch.setenv("DRY_RUN", truthy)
+        cfg = Config.from_env()
+        assert cfg.dry_run is True, f"Failed for truthy value {truthy!r}"
+
+
+def test_bool_parsing_falsy_variants(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    for falsy in ["0", "false", "no", "off", "", "maybe"]:
+        monkeypatch.setenv("DRY_RUN", falsy)
+        cfg = Config.from_env()
+        assert cfg.dry_run is False, f"Failed for falsy value {falsy!r}"
