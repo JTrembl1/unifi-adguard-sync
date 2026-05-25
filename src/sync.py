@@ -2,7 +2,7 @@ import logging
 import time
 from dataclasses import dataclass
 
-from src.mapping import filter_by_scope, to_adguard_payload
+from src.mapping import filter_by_scope, filter_excluded_macs, to_adguard_payload
 from src.diff import compute_diff, extract_mac
 
 logger = logging.getLogger(__name__)
@@ -26,12 +26,14 @@ def run_sync_cycle(
     scope: str,
     ownership_tag: str,
     dry_run: bool,
+    exclude_macs: frozenset[str] = frozenset(),
 ) -> SyncResult:
     start = time.monotonic()
     result = SyncResult()
 
     unifi_records = unifi.fetch_clients()
     in_scope = filter_by_scope(unifi_records, scope=scope)
+    in_scope = filter_excluded_macs(in_scope, excluded=exclude_macs)
     adguard_clients = adguard.list_clients()
 
     desired = [

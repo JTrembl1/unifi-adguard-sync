@@ -1,5 +1,5 @@
 import pytest
-from src.mapping import resolve_name, to_adguard_payload, filter_by_scope
+from src.mapping import resolve_name, to_adguard_payload, filter_by_scope, filter_excluded_macs
 
 
 # --- resolve_name ---
@@ -65,3 +65,33 @@ def test_filter_all_keeps_everything():
     ]
     result = filter_by_scope(records, scope="all")
     assert len(result) == 2
+
+
+# --- filter_excluded_macs ---
+
+def test_filter_excluded_macs_removes_listed():
+    records = [
+        {"macAddress": "aa:bb:cc:dd:ee:ff"},
+        {"macAddress": "11:22:33:44:55:66"},
+    ]
+    result = filter_excluded_macs(records, excluded=frozenset({"aa:bb:cc:dd:ee:ff"}))
+    assert [r["macAddress"] for r in result] == ["11:22:33:44:55:66"]
+
+
+def test_filter_excluded_macs_case_insensitive():
+    records = [{"macAddress": "AA:BB:CC:DD:EE:FF"}]
+    result = filter_excluded_macs(records, excluded=frozenset({"aa:bb:cc:dd:ee:ff"}))
+    assert result == []
+
+
+def test_filter_excluded_macs_empty_set_passes_all_through():
+    records = [{"macAddress": "aa:bb:cc:dd:ee:ff"}, {"macAddress": "11:22:33:44:55:66"}]
+    result = filter_excluded_macs(records, excluded=frozenset())
+    assert len(result) == 2
+
+
+def test_filter_excluded_macs_handles_missing_mac_field():
+    records = [{"name": "no mac here"}, {"macAddress": "aa:bb:cc:dd:ee:ff"}]
+    result = filter_excluded_macs(records, excluded=frozenset({"aa:bb:cc:dd:ee:ff"}))
+    assert len(result) == 1
+    assert result[0]["name"] == "no mac here"

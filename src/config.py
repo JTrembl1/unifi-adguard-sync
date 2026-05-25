@@ -50,6 +50,7 @@ class Config:
     mode: str
     ownership_tag: str
     log_level: str
+    exclude_macs: frozenset[str]
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -63,6 +64,10 @@ class Config:
             raise ConfigError(
                 f"MODE must be one of {sorted(_VALID_MODES)}, got {mode!r}"
             )
+        exclude_macs_raw = os.environ.get("EXCLUDE_MACS", "")
+        exclude_macs = frozenset(
+            m.strip().lower() for m in exclude_macs_raw.split(",") if m.strip()
+        )
         return cls(
             unifi_host=_required("UNIFI_HOST"),
             unifi_api_key=_required("UNIFI_API_KEY"),
@@ -78,4 +83,5 @@ class Config:
             mode=mode,
             ownership_tag=os.environ.get("OWNERSHIP_TAG", "managed-by-unifi-sync"),
             log_level=os.environ.get("LOG_LEVEL", "info"),
+            exclude_macs=exclude_macs,
         )

@@ -105,3 +105,38 @@ def test_grace_tracker_called_with_current_unifi_macs():
     grace.update_and_get_deletable.assert_called_once()
     seen_arg = grace.update_and_get_deletable.call_args[1]["currently_seen"]
     assert "aa:bb:cc:dd:ee:01" in {m.lower() for m in seen_arg}
+
+
+def test_excluded_macs_not_added():
+    unifi = _fake_unifi([
+        {"name": "NAS", "macAddress": "aa:bb:cc:11:22:33", "fixedIp": True},
+        {"name": "homelab-vm", "macAddress": "b6:31:6f:a3:c0:60", "fixedIp": True},
+    ])
+    adguard = _fake_adguard([])
+    grace = _fake_grace(set())
+
+    result = run_sync_cycle(
+        unifi=unifi, adguard=adguard, grace=grace,
+        scope="all", ownership_tag="t", dry_run=False,
+        exclude_macs=frozenset({"b6:31:6f:a3:c0:60"}),
+    )
+    assert result.added == 1
+    call_payload = adguard.add_client.call_args[0][0]
+    assert call_payload["name"] == "NAS"
+
+
+def test_excluded_macs_not_tracked_by_grace():
+    """Excluded MACs must not be passed to grace tracker — they shouldn't accumulate state."""
+    unifi = _fake_unifi([
+        {"name": "homelab-vm", "macAddress": "b6:31:6f:a3:c0:60", "fixedIp": True},
+    ])
+    adguard = _fake_adguard([])
+    grace = _fake_grace(set())
+
+    run_sync_cycle(
+        unifi=unifi, adguard=adguard, grace=grace,
+        scope="all", ownership_tag="t", dry_run=False,
+        exclude_macs=frozenset({"b6:31:6f:a3:c0:60"}),
+    )
+    seen_arg = grace.update_and_get_deletable.call_args[1]["currently_seen"]
+    assert "b6:31:6f:a3:c0:60" not in {m.lower() for m in seen_arg}

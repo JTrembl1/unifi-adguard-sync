@@ -95,3 +95,27 @@ def test_bool_parsing_falsy_variants(monkeypatch):
         monkeypatch.setenv("DRY_RUN", falsy)
         cfg = Config.from_env()
         assert cfg.dry_run is False, f"Failed for falsy value {falsy!r}"
+
+
+def test_exclude_macs_parses_csv(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("EXCLUDE_MACS", "AA:BB:CC:DD:EE:FF, 11:22:33:44:55:66")
+    cfg = Config.from_env()
+    assert cfg.exclude_macs == frozenset({"aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"})
+
+
+def test_exclude_macs_empty_when_unset(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("EXCLUDE_MACS", raising=False)
+    cfg = Config.from_env()
+    assert cfg.exclude_macs == frozenset()
+
+
+def test_exclude_macs_ignores_empty_entries(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("EXCLUDE_MACS", ",aa:bb:cc:dd:ee:ff,,")
+    cfg = Config.from_env()
+    assert cfg.exclude_macs == frozenset({"aa:bb:cc:dd:ee:ff"})

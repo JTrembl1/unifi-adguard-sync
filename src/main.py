@@ -77,6 +77,7 @@ def _loop(cfg: Config) -> int:
                 unifi=unifi, adguard=adguard, grace=grace,
                 scope=cfg.sync_scope, ownership_tag=cfg.ownership_tag,
                 dry_run=cfg.dry_run,
+                exclude_macs=cfg.exclude_macs,
             )
             logger.info(
                 "sync ok  added=%d updated=%d deleted=%d untouched=%d failed=%d took=%dms",

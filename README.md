@@ -122,6 +122,7 @@ All settings live in `.env` (which is gitignored — secrets never leave this ho
 | `DRY_RUN` | `false` | Plan-only mode (no writes) |
 | `MODE` | `loop` | `loop` (normal) or `connectivity-check` (one-shot) |
 | `OWNERSHIP_TAG` | `managed-by-unifi-sync` | Fence tag for managed clients |
+| `EXCLUDE_MACS` | (empty) | Comma-separated MACs to skip — useful for infra devices (the host VM, hypervisor) you don't want in AdGuard |
 | `LOG_LEVEL` | `info` | `debug` / `info` / `warning` / `error` |
 | `TZ` | `America/Toronto` | Log timestamps |
 
