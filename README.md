@@ -183,4 +183,4 @@ docker compose run --rm unifi-adguard-sync python -m pytest -v
 
 ## License
 
-TBD (this is internal homelab tooling for now).
+[MIT](LICENSE)
