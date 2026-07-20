@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Heads up: this tool has a deliberately narrow scope — **one-way device-name
+        sync from UniFi to AdGuard Home**. Requests outside that scope (two-way sync,
+        DNS rewrites, service hostnames) will likely be declined. See
+        [CONTRIBUTING.md](https://github.com/JTrembl1/unifi-adguard-sync/blob/main/.github/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, not the solution — what are you trying to do that you can't today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What would the tool do differently? If it needs new configuration, what would the variable(s) look like?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds considered
+      description: Can EXCLUDE_MACS, SYNC_SCOPE, the ownership tag, or manual AdGuard entries already get you close?

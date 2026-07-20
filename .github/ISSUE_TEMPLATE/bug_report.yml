@@ -1,0 +1,51 @@
+name: Bug report
+description: Something isn't working — a sync error, wrong plan, container problem
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! **Do not file security issues here** — use
+        [private vulnerability reporting](https://github.com/JTrembl1/unifi-adguard-sync/security/advisories/new) instead.
+
+        ⚠️ **Redact all secrets** (API keys, passwords) from logs and config before pasting.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+      placeholder: e.g., a manually-created AdGuard client showed up in the delete plan
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Output of `docker compose logs` around the failure. Set `LOG_LEVEL=debug` and re-run if the info-level logs don't show the problem. Automatically formatted as code.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Your `.env` with `UNIFI_API_KEY` and `ADGUARD_PASSWORD` **redacted**. Non-secret settings (SYNC_SCOPE, DELETE_GRACE_HOURS, EXCLUDE_MACS, etc.) often matter.
+      render: shell
+  - type: input
+    id: versions
+    attributes:
+      label: UniFi and AdGuard versions
+      placeholder: e.g., UniFi Network 10.1 on UCG Max, AdGuard Home v0.107.x
+    validations:
+      required: true
+  - type: dropdown
+    id: dry-run
+    attributes:
+      label: Does it reproduce in dry-run?
+      description: Set `DRY_RUN=true` and check whether the plan output shows the same wrong behavior.
+      options:
+        - "Yes — the dry-run plan is wrong too"
+        - "No — dry-run looks correct, only live mode misbehaves"
+        - "Not tested"
+    validations:
+      required: true
