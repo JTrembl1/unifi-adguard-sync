@@ -35,7 +35,7 @@ def test_defaults_applied(monkeypatch):
     assert cfg.delete_grace_hours == 24
     assert cfg.dry_run is False
     assert cfg.mode == "loop"
-    assert cfg.ownership_tag == "managed-by-unifi-sync"
+    assert cfg.ownership_tag == "os_other"
     assert cfg.log_level == "info"
 
 
@@ -119,3 +119,19 @@ def test_exclude_macs_ignores_empty_entries(monkeypatch):
     monkeypatch.setenv("EXCLUDE_MACS", ",aa:bb:cc:dd:ee:ff,,")
     cfg = Config.from_env()
     assert cfg.exclude_macs == frozenset({"aa:bb:cc:dd:ee:ff"})
+
+
+def test_ownership_tag_accepts_adguard_builtin_tag(monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("OWNERSHIP_TAG", "user_regular")
+    assert Config.from_env().ownership_tag == "user_regular"
+
+
+def test_ownership_tag_rejects_custom_tag(monkeypatch):
+    # AdGuard Home rejects any client tag outside its built-in list.
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("OWNERSHIP_TAG", "managed-by-unifi-sync")
+    with pytest.raises(ConfigError, match="OWNERSHIP_TAG"):
+        Config.from_env()

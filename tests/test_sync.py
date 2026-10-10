@@ -6,6 +6,7 @@ from src.sync import run_sync_cycle, SyncResult
 def _fake_unifi(records: list[dict]) -> MagicMock:
     m = MagicMock()
     m.fetch_clients.return_value = records
+    m.fetch_fixed_ip_clients.return_value = records
     return m
 
 
@@ -140,3 +141,25 @@ def test_excluded_macs_not_tracked_by_grace():
     )
     seen_arg = grace.update_and_get_deletable.call_args[1]["currently_seen"]
     assert "b6:31:6f:a3:c0:60" not in {m.lower() for m in seen_arg}
+
+
+def test_scope_fixed_reads_fixed_ip_clients_not_connected_clients():
+    unifi = _fake_unifi([
+        {"name": "NAS", "macAddress": "aa:bb:cc:11:22:33", "ipAddress": "10.0.0.5", "fixedIp": True}
+    ])
+    run_sync_cycle(
+        unifi=unifi, adguard=_fake_adguard([]), grace=_fake_grace(set()),
+        scope="fixed", ownership_tag="t", dry_run=True,
+    )
+    unifi.fetch_fixed_ip_clients.assert_called_once()
+    unifi.fetch_clients.assert_not_called()
+
+
+def test_scope_all_reads_connected_clients():
+    unifi = _fake_unifi([{"name": "Phone", "macAddress": "aa:bb:cc:11:22:33"}])
+    run_sync_cycle(
+        unifi=unifi, adguard=_fake_adguard([]), grace=_fake_grace(set()),
+        scope="all", ownership_tag="t", dry_run=True,
+    )
+    unifi.fetch_clients.assert_called_once()
+    unifi.fetch_fixed_ip_clients.assert_not_called()

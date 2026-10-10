@@ -11,7 +11,7 @@ def resolve_name(record: dict) -> str:
 
 
 def to_adguard_payload(record: dict, ownership_tag: str) -> dict:
-    ids = [record["macAddress"]]
+    ids = [record["macAddress"].lower()]
     ip = record.get("ipAddress")
     if ip:
         ids.append(ip)

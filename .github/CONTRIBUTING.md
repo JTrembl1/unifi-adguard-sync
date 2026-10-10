@@ -53,7 +53,7 @@ AdGuard with `DRY_RUN=false`.
 ## Ground Rules
 
 - Never commit secrets. Credentials belong in `.env`, which is gitignored.
-- The ownership-tag fence (`managed-by-unifi-sync`) is the core safety
+- The ownership-tag fence (`OWNERSHIP_TAG`, `os_other` by default) is the core safety
   invariant: the tool must never modify AdGuard clients it doesn't own.
   Changes that weaken it will not be merged.
 - Be respectful — see the [Code of Conduct](CODE_OF_CONDUCT.md).

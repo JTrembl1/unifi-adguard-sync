@@ -1,7 +1,7 @@
 from src.diff import compute_diff, extract_mac, SyncPlan
 
 
-def _adguard_client(name, mac, ip=None, tag="managed-by-unifi-sync"):
+def _adguard_client(name, mac, ip=None, tag="os_other"):
     ids = [mac]
     if ip:
         ids.append(ip)

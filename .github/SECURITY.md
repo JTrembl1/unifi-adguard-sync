@@ -32,7 +32,7 @@ Things that are in scope and especially worth reporting:
 - Leakage of UniFi API keys or AdGuard credentials (e.g., secrets appearing in
   logs, error messages, or state files).
 - The sync writing to AdGuard clients it doesn't own (bypassing the
-  `managed-by-unifi-sync` ownership tag), or otherwise destructive behavior
+  `OWNERSHIP_TAG` ownership tag, `os_other` by default), or otherwise destructive behavior
   outside the documented one-way name sync.
 - Injection via untrusted device names fetched from UniFi (e.g., a hostile
   DHCP hostname breaking the AdGuard API calls or log output).

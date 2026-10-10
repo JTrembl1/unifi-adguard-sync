@@ -35,7 +35,7 @@ def test_list_clients_uses_basic_auth():
 @responses.activate
 def test_add_client_posts_correct_payload():
     responses.post("http://10.0.0.2:3000/control/clients/add", status=200)
-    payload = {"name": "MBP", "ids": ["aa:bb:cc:11:22:33"], "tags": ["managed-by-unifi-sync"]}
+    payload = {"name": "MBP", "ids": ["aa:bb:cc:11:22:33"], "tags": ["os_other"]}
     _client().add_client(payload)
     assert responses.calls[0].request.body is not None
 

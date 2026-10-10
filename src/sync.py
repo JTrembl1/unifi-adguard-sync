@@ -31,7 +31,12 @@ def run_sync_cycle(
     start = time.monotonic()
     result = SyncResult()
 
-    unifi_records = unifi.fetch_clients()
+    # `fixed` reads every reserved-IP device, connected or not; `all` reads
+    # whoever is connected right now.
+    if scope == "fixed":
+        unifi_records = unifi.fetch_fixed_ip_clients()
+    else:
+        unifi_records = unifi.fetch_clients()
     in_scope = filter_by_scope(unifi_records, scope=scope)
     in_scope = filter_excluded_macs(in_scope, excluded=exclude_macs)
     adguard_clients = adguard.list_clients()

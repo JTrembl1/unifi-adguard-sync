@@ -8,6 +8,15 @@ class ConfigError(ValueError):
 
 _VALID_SCOPES = {"fixed", "all"}
 _VALID_MODES = {"loop", "connectivity-check"}
+# AdGuard Home rejects any client tag outside this built-in list
+# (internal/client/storage.go `allowedTags`).
+_ADGUARD_TAGS = {
+    "device_audio", "device_camera", "device_gameconsole", "device_laptop",
+    "device_nas", "device_other", "device_pc", "device_phone",
+    "device_printer", "device_securityalarm", "device_tablet", "device_tv",
+    "os_android", "os_ios", "os_linux", "os_macos", "os_other", "os_windows",
+    "user_admin", "user_child", "user_regular",
+}
 
 
 def _required(name: str) -> str:
@@ -64,6 +73,12 @@ class Config:
             raise ConfigError(
                 f"MODE must be one of {sorted(_VALID_MODES)}, got {mode!r}"
             )
+        ownership_tag = os.environ.get("OWNERSHIP_TAG", "os_other")
+        if ownership_tag not in _ADGUARD_TAGS:
+            raise ConfigError(
+                f"OWNERSHIP_TAG must be an AdGuard built-in tag "
+                f"{sorted(_ADGUARD_TAGS)}, got {ownership_tag!r}"
+            )
         exclude_macs_raw = os.environ.get("EXCLUDE_MACS", "")
         exclude_macs = frozenset(
             m.strip().lower() for m in exclude_macs_raw.split(",") if m.strip()
@@ -81,7 +96,7 @@ class Config:
             delete_grace_hours=_int("DELETE_GRACE_HOURS", 24),
             dry_run=_bool("DRY_RUN", False),
             mode=mode,
-            ownership_tag=os.environ.get("OWNERSHIP_TAG", "managed-by-unifi-sync"),
+            ownership_tag=ownership_tag,
             log_level=os.environ.get("LOG_LEVEL", "info"),
             exclude_macs=exclude_macs,
         )

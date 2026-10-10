@@ -32,12 +32,20 @@ def test_payload_contains_name_ids_and_ownership_tag():
         "macAddress": "aa:bb:cc:11:22:33",
         "ipAddress": "192.168.10.42",
     }
-    p = to_adguard_payload(record, ownership_tag="managed-by-unifi-sync")
+    p = to_adguard_payload(record, ownership_tag="os_other")
     assert p["name"] == "MBP"
     assert "aa:bb:cc:11:22:33" in p["ids"]
     assert "192.168.10.42" in p["ids"]
-    assert p["tags"] == ["managed-by-unifi-sync"]
+    assert p["tags"] == ["os_other"]
     assert p["use_global_settings"] is True
+
+
+def test_payload_lowercases_mac():
+    # AdGuard returns MAC ids lowercased; a mixed-case id would never compare
+    # equal in the diff and would trigger an update every cycle.
+    record = {"name": "MBP", "macAddress": "AA:BB:CC:11:22:33"}
+    p = to_adguard_payload(record, ownership_tag="t")
+    assert p["ids"] == ["aa:bb:cc:11:22:33"]
 
 
 def test_payload_omits_ip_when_missing():
