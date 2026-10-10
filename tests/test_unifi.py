@@ -4,10 +4,26 @@ import pytest
 from src.unifi import UnifiClient, UnifiError
 
 
+# The Integration API wants the site UUID; the classic API wants the site's
+# internal name. The client looks one up from the other via /v1/sites.
+_SITE_UUID = "88f7af54-98f8-306a-a1c7-c9349722b1f6"
+_SITES_URL = "https://10.0.0.1/proxy/network/integration/v1/sites"
+_CLIENTS_URL = f"https://10.0.0.1/proxy/network/integration/v1/sites/{_SITE_UUID}/clients"
+_KNOWN_URL = "https://10.0.0.1/proxy/network/api/s/default/rest/user"
+
+
+def _register_site():
+    responses.get(_SITES_URL, json={
+        "offset": 0, "limit": 200, "count": 1, "totalCount": 1,
+        "data": [{"id": _SITE_UUID, "internalReference": "default", "name": "Default"}],
+    })
+
+
 @responses.activate
 def test_fetch_clients_returns_list():
+    _register_site()
     responses.get(
-        "https://10.0.0.1/proxy/network/integration/v1/sites/default/clients",
+        _CLIENTS_URL,
         json={
             "data": [
                 {
@@ -34,8 +50,9 @@ def test_fetch_clients_returns_list():
 
 @responses.activate
 def test_fetch_clients_sends_api_key_header():
+    _register_site()
     responses.get(
-        "https://10.0.0.1/proxy/network/integration/v1/sites/default/clients",
+        _CLIENTS_URL,
         json={"data": []},
         status=200,
     )
@@ -46,8 +63,9 @@ def test_fetch_clients_sends_api_key_header():
 
 @responses.activate
 def test_fetch_clients_raises_on_401():
+    _register_site()
     responses.get(
-        "https://10.0.0.1/proxy/network/integration/v1/sites/default/clients",
+        _CLIENTS_URL,
         json={"error": "unauthorized"},
         status=401,
     )
@@ -63,8 +81,6 @@ def test_fetch_clients_raises_on_network_error():
         client.fetch_clients()
 
 
-_CLIENTS_URL = "https://10.0.0.1/proxy/network/integration/v1/sites/default/clients"
-
 
 def _page(macs: list[str], offset: int, limit: int, total: int) -> dict:
     return {
@@ -75,6 +91,7 @@ def _page(macs: list[str], offset: int, limit: int, total: int) -> dict:
 
 @responses.activate
 def test_fetch_clients_requests_max_page_size_by_default():
+    _register_site()
     responses.get(
         _CLIENTS_URL,
         match=[matchers.query_param_matcher({"offset": "0", "limit": "200"})],
@@ -86,6 +103,7 @@ def test_fetch_clients_requests_max_page_size_by_default():
 
 @responses.activate
 def test_fetch_clients_follows_pages_until_total_count():
+    _register_site()
     for offset, macs in ((0, ["m1", "m2"]), (2, ["m3", "m4"]), (4, ["m5"])):
         responses.get(
             _CLIENTS_URL,
@@ -94,11 +112,12 @@ def test_fetch_clients_follows_pages_until_total_count():
         )
     client = UnifiClient("https://10.0.0.1", "key", "default", True, page_size=2)
     assert [c["macAddress"] for c in client.fetch_clients()] == ["m1", "m2", "m3", "m4", "m5"]
-    assert len(responses.calls) == 3
+    assert len(responses.calls) == 4  # site lookup + 3 pages
 
 
 @responses.activate
 def test_fetch_clients_raises_if_later_page_fails():
+    _register_site()
     # A partial list would make the missing devices look absent and start
     # their deletion grace clock, so a failed page must abort the whole fetch.
     responses.get(
@@ -118,6 +137,7 @@ def test_fetch_clients_raises_if_later_page_fails():
 
 @responses.activate
 def test_fetch_clients_stops_on_empty_page():
+    _register_site()
     # Clients can disconnect while paging; an empty page must not loop forever.
     responses.get(
         _CLIENTS_URL,
@@ -135,6 +155,7 @@ def test_fetch_clients_stops_on_empty_page():
 
 @responses.activate
 def test_fetch_clients_without_total_count_pages_until_short_page():
+    _register_site()
     responses.get(
         _CLIENTS_URL,
         match=[matchers.query_param_matcher({"offset": "0", "limit": "2"})],
@@ -149,11 +170,10 @@ def test_fetch_clients_without_total_count_pages_until_short_page():
     assert [c["macAddress"] for c in client.fetch_clients()] == ["m1", "m2", "m3"]
 
 
-_KNOWN_URL = "https://10.0.0.1/proxy/network/api/s/default/rest/user"
-
 
 @responses.activate
 def test_fetch_fixed_ip_clients_returns_reserved_devices_with_reserved_ip():
+    _register_site()
     responses.get(_KNOWN_URL, json={"meta": {"rc": "ok"}, "data": [
         {"mac": "aa:00:00:00:00:01", "name": "NAS", "hostname": "nas01",
          "use_fixedip": True, "fixed_ip": "192.168.10.2", "last_ip": "192.168.10.99"},
@@ -175,6 +195,7 @@ def test_fetch_fixed_ip_clients_returns_reserved_devices_with_reserved_ip():
 
 @responses.activate
 def test_fetch_fixed_ip_clients_raises_on_error_meta():
+    _register_site()
     responses.get(_KNOWN_URL, json={"meta": {"rc": "error", "msg": "api.err.LoginRequired"}, "data": []})
     client = UnifiClient("https://10.0.0.1", "key", "default", True)
     with pytest.raises(UnifiError, match="LoginRequired"):
@@ -183,7 +204,34 @@ def test_fetch_fixed_ip_clients_raises_on_error_meta():
 
 @responses.activate
 def test_fetch_fixed_ip_clients_raises_on_401():
+    _register_site()
     responses.get(_KNOWN_URL, json={"meta": {"rc": "error"}}, status=401)
     client = UnifiClient("https://10.0.0.1", "key", "default", True)
     with pytest.raises(UnifiError, match="401"):
         client.fetch_fixed_ip_clients()
+
+
+@responses.activate
+def test_site_uuid_is_translated_to_name_for_classic_api():
+    _register_site()
+    responses.get(_KNOWN_URL, json={"meta": {"rc": "ok"}, "data": []})
+    client = UnifiClient("https://10.0.0.1", "key", _SITE_UUID, True)
+    assert client.fetch_fixed_ip_clients() == []
+
+
+@responses.activate
+def test_unknown_site_raises_with_available_sites():
+    _register_site()
+    client = UnifiClient("https://10.0.0.1", "key", "branch-office", True)
+    with pytest.raises(UnifiError, match="branch-office.*default"):
+        client.fetch_clients()
+
+
+@responses.activate
+def test_site_lookup_happens_once_per_client():
+    _register_site()
+    responses.get(_CLIENTS_URL, json=_page([], 0, 200, 0))
+    client = UnifiClient("https://10.0.0.1", "key", "default", True)
+    client.fetch_clients()
+    client.fetch_clients()
+    assert sum(1 for c in responses.calls if c.request.url.split("?")[0] == _SITES_URL) == 1

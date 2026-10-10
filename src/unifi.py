@@ -14,6 +14,7 @@ class UnifiClient:
         self._site_id = site_id
         self._verify_ssl = verify_ssl
         self._page_size = page_size  # 200 is the API's maximum `limit`
+        self._resolved_site: tuple[str, str] | None = None
 
     def _url(self, path: str) -> str:
         return f"{self._host}{path}"
@@ -46,7 +47,8 @@ class UnifiClient:
         known-clients list (which accepts the same API key) and reshapes each
         record like an Integration record, using the reserved IP as the address.
         """
-        body = self._get(f"/proxy/network/api/s/{self._site_id}/rest/user")
+        _, site_name = self._site_ids()
+        body = self._get(f"/proxy/network/api/s/{site_name}/rest/user")
         meta = body.get("meta") or {}
         if meta.get("rc") != "ok":
             raise UnifiError(f"UniFi known-clients request failed: {meta.get('msg', meta)}")
@@ -62,9 +64,33 @@ class UnifiClient:
             if r.get("use_fixedip") is True and r.get("fixed_ip") and r.get("mac")
         ]
 
+    def _site_ids(self) -> tuple[str, str]:
+        """Return (UUID, internal name) for the configured site, looked up once.
+
+        UNIFI_SITE_ID may be either form: the Integration API only accepts the
+        UUID, and the classic API only accepts the internal name (e.g. "default").
+        """
+        if self._resolved_site is None:
+            sites = self._get(
+                "/proxy/network/integration/v1/sites", params={"limit": 200}
+            )["data"]
+            for site in sites:
+                if self._site_id in (site.get("id"), site.get("internalReference")):
+                    self._resolved_site = (site["id"], site["internalReference"])
+                    break
+            else:
+                known = ", ".join(
+                    f"{site.get('internalReference')} ({site.get('id')})" for site in sites
+                )
+                raise UnifiError(
+                    f"UniFi site {self._site_id!r} not found; available: {known}"
+                )
+        return self._resolved_site
+
     def _fetch_page(self, offset: int) -> dict:
+        site_uuid, _ = self._site_ids()
         return self._get(
-            f"/proxy/network/integration/v1/sites/{self._site_id}/clients",
+            f"/proxy/network/integration/v1/sites/{site_uuid}/clients",
             params={"offset": offset, "limit": self._page_size},
         )
 

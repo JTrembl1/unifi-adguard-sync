@@ -111,7 +111,7 @@ All settings live in `.env` (which is gitignored — secrets never leave this ho
 |---|---|---|
 | `UNIFI_HOST` | — | UniFi controller URL (e.g., `https://192.168.1.1`) |
 | `UNIFI_API_KEY` | — | API key from UniFi Settings → Integrations |
-| `UNIFI_SITE_ID` | `default` | Site identifier (almost always `default`) |
+| `UNIFI_SITE_ID` | `default` | Site name (almost always `default`) or site UUID; the tool looks up the other form itself |
 | `UNIFI_VERIFY_SSL` | `true` | Set `false` to skip cert verification (self-signed) |
 | `ADGUARD_HOST` | — | AdGuard URL (e.g., `http://192.168.10.11:3000`) |
 | `ADGUARD_USER` | — | Admin username |
